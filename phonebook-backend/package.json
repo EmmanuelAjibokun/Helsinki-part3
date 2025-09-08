@@ -1,0 +1,16 @@
+{
+  "name": "phonebook-backend",
+  "version": "1.0.0",
+  "description": "save phone record",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "manny",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
