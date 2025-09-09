@@ -5,6 +5,10 @@ const date = new Date();
 app.use(express.json());
 
 
+const generateId = () => {
+  return Math.floor(Math.random() * 1000)
+}
+
 let phonebook = [
   { 
     "id": "1",
@@ -60,6 +64,18 @@ app.delete('/api/persons/:id', (req, res) => {
     return res.status(404).send(`Person of ${personId} id, does not exist`);
   }
   res.status(204).end()
+})
+
+app.post('/api/persons', (req, res) => {
+  console.log(req.body)
+  const newPhone = req.body
+  if(newPhone) {
+    phonebook = phonebook.concat({id: String(generateId()), ...newPhone})
+    console.log(phonebook)
+    res.json(phonebook);
+  } else {
+    res.status(400);
+  }
 })
 
 const PORT = 3001;
