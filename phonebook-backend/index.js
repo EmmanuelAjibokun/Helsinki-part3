@@ -68,14 +68,18 @@ app.delete('/api/persons/:id', (req, res) => {
 
 app.post('/api/persons', (req, res) => {
   console.log(req.body)
-  const newPhone = req.body
-  if(newPhone) {
-    phonebook = phonebook.concat({id: String(generateId()), ...newPhone})
-    console.log(phonebook)
-    res.json(phonebook);
-  } else {
-    res.status(400);
+  const newPerson = req.body
+
+  if (!newPerson.name || !newPerson.number) {
+    return res.status(400).json({ "error": 'missing field' });
   }
+  const personExist = phonebook.find(per => per.name == newPerson.name)
+  if(!personExist) {
+    return res.status(400).json({ "error": 'name must be unique' });
+  }
+  phonebook = phonebook.concat({id: String(generateId()), ...newPerson})
+  console.log(phonebook)
+  res.json(phonebook);
 })
 
 const PORT = 3001;
