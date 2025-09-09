@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const date = new Date();
 
 app.use(express.json());
 
@@ -30,6 +31,14 @@ const phonebook = [
 app.get('/api/persons', (req, res) => {
     console.log(req);
     res.status(200).json(phonebook);
+})
+
+app.get('/info', (req, res) => {
+    console.log(req.headers)
+    const message = `<h3>Phonebook has info for ${phonebook.length} people</h3>`;
+    const dateTime = `<h3>${date.toDateString()} ${date.toTimeString()}</h3>`;
+    console.log("DateTime:", dateTime);
+    res.status(200).send(`${message}${dateTime}`)
 })
 
 const PORT = 3001;
