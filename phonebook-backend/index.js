@@ -5,7 +5,7 @@ const date = new Date();
 app.use(express.json());
 
 
-const phonebook = [
+let phonebook = [
   { 
     "id": "1",
     "name": "Arto Hellas", 
@@ -49,6 +49,17 @@ app.get('/api/persons/:id', (req, res) => {
     return res.sendStatus(404);
   }
   res.status(200).json(person)
+})
+
+app.delete('/api/persons/:id', (req, res) => {
+  const personId = req.params.id
+  const personExist = phonebook.find(per => per.id == personId)
+  phonebook = phonebook.filter(per => per.id !== personId)
+  console.log(phonebook)
+  if(!personExist) {
+    return res.status(404).send(`Person of ${personId} id, does not exist`);
+  }
+  res.status(204).end()
 })
 
 const PORT = 3001;
