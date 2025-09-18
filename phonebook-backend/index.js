@@ -1,6 +1,7 @@
 const express = require('express');
 const requestLogger = require('./requestLogger');
 const morgan = require('morgan');
+const cors = require('cors');
 const app = express();
 const date = new Date();
 
@@ -17,6 +18,8 @@ const logger = morgan(function (tokens, req, res) {
     tokens.body(req, res)
   ].join(' ')
 })
+
+app.use(cors())
 app.use(express.json());
 app.use(logger);
 
