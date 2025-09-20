@@ -22,6 +22,7 @@ const logger = morgan(function (tokens, req, res) {
 app.use(cors())
 app.use(express.json());
 app.use(logger);
+app.use(express.static('dist'))
 
 
 const generateId = () => {
@@ -52,7 +53,7 @@ let phonebook = [
 ]
 
 app.get('/api/persons', (req, res) => {
-  console.log(req);
+  // console.log(req);
   res.status(200).json(phonebook);
 })
 
@@ -101,7 +102,7 @@ app.post('/api/persons', (req, res) => {
   res.json(phonebook);
 })
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
