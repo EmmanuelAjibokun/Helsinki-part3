@@ -5,6 +5,9 @@ const cors = require('cors');
 const app = express();
 const date = new Date();
 
+const connectDB = require('./config/dbConn.js');
+const Phone = require('./model/Person');
+
 morgan.token("body", (req) => {
   return req.body ? JSON.stringify(req.body) : ""
 })
@@ -18,6 +21,8 @@ const logger = morgan(function (tokens, req, res) {
     tokens.body(req, res)
   ].join(' ')
 })
+
+connectDB();
 
 app.use(cors())
 app.use(express.json());
@@ -53,8 +58,11 @@ let phonebook = [
 ]
 
 app.get('/api/persons', (req, res) => {
-  // console.log(req);
-  res.status(200).json(phonebook);
+  console.log(Phone);
+  Phone.find({})
+    .then(phonebook => {
+      res.status(200).json(phonebook);
+    })
 })
 
 app.get('/info', (req, res) => {
