@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const cors = require('cors');
 const app = express();
 const date = new Date();
+const mongoose = require('mongoose');
 
 const connectDB = require('./config/dbConn.js');
 const Phone = require('./model/Person');
@@ -58,56 +59,76 @@ let phonebook = [
 ]
 
 app.get('/api/persons', (req, res) => {
-  console.log(Phone);
   Phone.find({})
     .then(phonebook => {
       res.status(200).json(phonebook);
     })
 })
 
-app.get('/info', (req, res) => {
+app.get('/info', async (req, res) => {
   console.log(req.headers)
-  const message = `<h3>Phonebook has info for ${phonebook.length} people</h3>`;
+  let phones;
+  await Phone.find({})
+    .then(phonebook => {
+      phones = phonebook;
+    })
+  const message = `<h3>Phonebook has info for ${phones.length} people</h3>`;
   const dateTime = `<h3>${date.toDateString()} ${date.toTimeString()}</h3>`;
   console.log("DateTime:", dateTime);
   res.status(200).send(`${message}${dateTime}`)
 })
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', async (req, res) => {
   const personId = req.params.id
-  const person = phonebook.find(per => per.id == personId)
-  console.log(person)
-  if(!person) {
-    return res.sendStatus(404);
+
+  if (!mongoose.Types.ObjectId.isValid(personId)) {
+    return res.status(400).json({ error: 'Invalid ID format' });
   }
-  res.status(200).json(person)
+  const foundPerson = await Phone.findById(personId);
+  if(!foundPerson) {
+    return res.sendStatus(404);
+  } else {
+    console.log(foundPerson)
+    res.status(200).json(foundPerson);
+  }
 })
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', async (req, res) => {
   const personId = req.params.id
-  const personExist = phonebook.find(per => per.id == personId)
-  phonebook = phonebook.filter(per => per.id !== personId)
-  console.log(phonebook)
+
+  if (!mongoose.Types.ObjectId.isValid(personId)) {
+    return res.status(400).json({ error: 'Invalid ID format' });
+  }
+
+  const personExist = await Phone.findById(personId);
   if(!personExist) {
     return res.status(404).send(`Person of ${personId} id, does not exist`);
   }
+  await Phone.deleteOne({_id: personId})
   res.status(204).end()
 })
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', async (req, res) => {
   console.log(req.body)
   const newPerson = req.body
 
   if (!newPerson.name || !newPerson.number) {
     return res.status(400).json({ "error": 'missing field' });
   }
-  const personExist = phonebook.find(per => per.name == newPerson.name)
-  if(!personExist) {
+
+  const personExist = await Phone.findOne({name: newPerson.name}).exec();
+  if(personExist) {
     return res.status(400).json({ "error": 'name must be unique' });
   }
-  phonebook = phonebook.concat({id: String(generateId()), ...newPerson})
-  console.log(phonebook)
-  res.json(phonebook);
+  // phonebook = phonebook.concat({id: String(generateId()), ...newPerson})
+  const result = await Phone.create({
+    name: newPerson.name,
+    number: newPerson.number
+  })
+  // await the promise to ensure the phone is saved on the DB before console logging it
+
+  console.log(result)
+  res.status(201).json(result);
 })
 
 const PORT = process.env.PORT || 3001;
