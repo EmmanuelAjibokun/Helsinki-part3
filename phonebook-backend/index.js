@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 
 const connectDB = require('./config/dbConn.js');
 const Phone = require('./model/Person');
+const errorHandler = require('./middleware/errorHandler.js');
 
 morgan.token("body", (req) => {
   return req.body ? JSON.stringify(req.body) : ""
@@ -78,22 +79,27 @@ app.get('/info', async (req, res) => {
   res.status(200).send(`${message}${dateTime}`)
 })
 
-app.get('/api/persons/:id', async (req, res) => {
+app.get('/api/persons/:id', async (req, res, next) => {
   const personId = req.params.id
 
   if (!mongoose.Types.ObjectId.isValid(personId)) {
     return res.status(400).json({ error: 'Invalid ID format' });
   }
-  const foundPerson = await Phone.findById(personId);
-  if(!foundPerson) {
-    return res.sendStatus(404);
-  } else {
-    console.log(foundPerson)
-    res.status(200).json(foundPerson);
-  }
+  await Phone.findById(personId)
+  .then( person => {
+    if(!person) {
+      return res.sendStatus(404);
+    } else {
+      console.log(person)
+      res.status(200).json(person);
+    }
+  })
+  .catch(err => {
+    next(err)
+  })
 })
 
-app.delete('/api/persons/:id', async (req, res) => {
+app.delete('/api/persons/:id', async (req, res, next) => {
   const personId = req.params.id
 
   if (!mongoose.Types.ObjectId.isValid(personId)) {
@@ -105,7 +111,12 @@ app.delete('/api/persons/:id', async (req, res) => {
     return res.status(404).send(`Person of ${personId} id, does not exist`);
   }
   await Phone.deleteOne({_id: personId})
-  res.status(204).end()
+  .then(result => {
+    res.status(204).end()
+  })
+  .catch(err => {
+    next(err)
+  })
 })
 
 app.post('/api/persons', async (req, res) => {
@@ -130,6 +141,36 @@ app.post('/api/persons', async (req, res) => {
   console.log(result)
   res.status(201).json(result);
 })
+
+app.put('/api/persons/:id', async (req, res, next) => {
+  const personId = req.params.id;
+  const person = req.body;
+
+  if (!person.name || !person.number) {
+    return res.status(400).json({ "error": 'missing field' });
+  }
+
+  try {
+    const updatedPerson = await Phone.findByIdAndUpdate(
+      personId,
+      { name: person.name, number: person.number },
+      { new: true, runValidators: true, context: 'query' } // ensures validation and returns updated doc
+    );
+
+    if (!updatedPerson) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+
+    res.status(200).json(updatedPerson);
+
+  } catch (error) {
+    console.error('Error updating person:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+    next(error)
+  }
+})
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
