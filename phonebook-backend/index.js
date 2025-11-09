@@ -36,28 +36,6 @@ const generateId = () => {
   return Math.floor(Math.random() * 1000)
 }
 
-let phonebook = [
-  { 
-    "id": "1",
-    "name": "Arto Hellas", 
-    "number": "040-123456"
-  },
-  { 
-    "id": "2",
-    "name": "Ada Lovelace", 
-    "number": "39-44-5323523"
-  },
-  { 
-    "id": "3",
-    "name": "Dan Abramov", 
-    "number": "12-43-234345"
-  },
-  { 
-    "id": "4",
-    "name": "Mary Poppendieck", 
-    "number": "39-23-6423122"
-  }
-]
 
 app.get('/api/persons', (req, res) => {
   Phone.find({})
@@ -120,27 +98,40 @@ app.delete('/api/persons/:id', async (req, res, next) => {
 })
 
 app.post('/api/persons', async (req, res) => {
-  console.log(req.body)
-  const newPerson = req.body
+  try {
+    const newPerson = req.body;
+    console.log('Incoming data:', newPerson);
 
-  if (!newPerson.name || !newPerson.number) {
-    return res.status(400).json({ "error": 'missing field' });
+    // Basic field validation
+    if (!newPerson.name || !newPerson.number) {
+      return res.status(400).json({ error: 'Name and number are required' });
+    }
+
+    // Check for duplicates
+    const personExist = await Phone.findOne({ name: newPerson.name }).exec();
+    if (personExist) {
+      return res.status(400).json({ error: 'Name must be unique' });
+    }
+
+    // Create the new record (Mongoose will validate schema)
+    const result = await Phone.create({
+      name: newPerson.name,
+      number: newPerson.number
+    });
+
+    console.log('Created:', result);
+    res.status(201).json(result);
+
+  } catch (error) {
+    // Catch Mongoose validation errors and return clean JSON
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.error('Unexpected server error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  const personExist = await Phone.findOne({name: newPerson.name}).exec();
-  if(personExist) {
-    return res.status(400).json({ "error": 'name must be unique' });
-  }
-  // phonebook = phonebook.concat({id: String(generateId()), ...newPerson})
-  const result = await Phone.create({
-    name: newPerson.name,
-    number: newPerson.number
-  })
-  // await the promise to ensure the phone is saved on the DB before console logging it
-
-  console.log(result)
-  res.status(201).json(result);
-})
+});
 
 app.put('/api/persons/:id', async (req, res, next) => {
   const personId = req.params.id;
@@ -164,7 +155,12 @@ app.put('/api/persons/:id', async (req, res, next) => {
     res.status(200).json(updatedPerson);
 
   } catch (error) {
-    console.error('Error updating person:', error.message);
+    // Catch Mongoose validation errors and return clean JSON
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.error('Unexpected server error:', error);
     res.status(500).json({ error: 'Internal server error' });
     next(error)
   }

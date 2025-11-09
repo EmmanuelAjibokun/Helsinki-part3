@@ -2,7 +2,11 @@ const mongoose = require('mongoose');
 const schema = mongoose.Schema;
 
 const phonebookSchema = new mongoose.Schema({
-    name: String,
+    name: {
+        type: String,
+        minLength: 3,
+        require: true,
+    },
     number: String,
 })
 
